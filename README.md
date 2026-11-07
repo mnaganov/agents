@@ -1,5 +1,10 @@
 # My LLM Agents Rules and Skills
 
+## Environments
+
+-  `gemini-config` is for Google Antigravity
+-  `claude` is for Anthropic Claude Code
+
 ## Rules
 
 -  `writing_style.md`—Personal writing and tone style guide (modeled after Brian W. Kernigan's writing style analysis)
