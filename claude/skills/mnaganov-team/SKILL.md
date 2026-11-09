@@ -32,7 +32,8 @@ parameter, teams are off: stop and tell the user. Verification needs `jq`
 on PATH.
 
 The skill runs on macOS and Windows. Notes marked **[Windows]** apply only
-to Windows (PowerShell 5.1); everything else is the same on both.
+to Windows (PowerShell 5.1), and notes marked **[macOS]** only to macOS;
+everything else is the same on both.
 
 ## Inputs
 
@@ -78,6 +79,17 @@ at high effort, tell the user before starting.
    `*/*/subagents/agent-areviewer-*.jsonl` (`agent-a<name>-<id>.jsonl`).
    Take the newest match; its first record holds `Team <slug>, role
    ...` from your brief. Record the paths as `$EXEC` and `$REV`.
+
+   **[macOS]** The full location is
+   `~/.claude/projects/<project-dir>/<session-id>/subagents/`, where
+   `<project-dir>` is the workspace's resolved absolute path with every
+   `/` replaced by `-`. Symlinks are resolved first, so a workspace in
+   `/tmp/team-test` lives under `-private-tmp-team-test`, not
+   `-tmp-team-test`. Because `<project-dir>` starts with `-`, a relative
+   shell glob such as `ls */*/subagents/...` run from
+   `~/.claude/projects` passes it to `ls` as an option and fails. Use Glob,
+   or a shell glob that starts with the absolute path
+   (`ls -t ~/.claude/projects/*/*/subagents/agent-aexecutor-*.jsonl`).
 
 ## Worker rules
 
