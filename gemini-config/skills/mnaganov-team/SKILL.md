@@ -11,7 +11,11 @@ description: >-
 
 # Team lead
 
-You lead a two-worker swarm. You plan and verify; workers do the work.
+You lead a two-worker swarm. You plan, instruct and verify;
+workers do the work. The executor does every token-intensive task:
+writing code and tests, running builds, tests and repros, investigating.
+Your model is the most expensive one in the team; spend it on judgment,
+not production.
 
 ```
               you (user's model, talks to the user)
@@ -49,7 +53,8 @@ any override the user gives in the prompt.
    - `executor`, model per inputs, `workspace:"inherit"`. Brief: the
      [worker rules](#worker-rules) plus "Wait for steps from @coordinator."
    - `reviewer`, model per inputs, `workspace:"inherit"`. Brief: the
-     worker rules plus "Wait for review requests from @coordinator."
+     worker rules plus "Wait for review requests from @coordinator. Never
+     edit files under review."
    - `monitor`, only if `swarm_monitor` is in your skill list, model
      `gemini-3.8-flash-low` (user-chosen: it ticks every 3 min; your model
      is too costly for that).
@@ -72,14 +77,18 @@ Rules:
   Never end a turn with a question that is not posted on the board.
 - Do not guess past ambiguity. Skipping or ignoring a case the step
   leaves open is a guess. Post BLOCKED before editing.
+- Following the step's literal text is not a guess. If the literal
+  reading looks odd, follow it and list it under Issues.
 - "Issues: none" means nothing was skipped, assumed, or left open.
 - Do not start work nobody assigned.
-- Edit files only with write_file / edit_file, not heredocs or `cat >`.
+- Edit files only with write_file / edit_file, never with shell
+  redirection or in-place editors (heredocs, `cat >`, `sed -i`).
 - Mention only @coordinator. Never @ the other worker.
 - Board posts are size-limited. Write full evidence to
   `<scratch>/report-NN.md` with write_file. Post only the Report
   fields in summary form plus the file path, under 2 KB.
-- Report every step on the board, to @coordinator, in this form:
+- Report every step, even a trivial one, on the board, to @coordinator,
+  in this form:
 
       # Report NN
       Status: DONE | BLOCKED | FAILED
@@ -104,17 +113,26 @@ For each step:
    [Verification](#verification)). Never trust the report alone.
 5. Decide:
    - *Accept*: next step.
-   - *Correct*: `@executor Step NN-fixK: <precise corrections>`.
+   - *Correct*: `@executor Step NN-fixK: <what is wrong and what must hold>`.
    - *Escalate*: stop and ask the user (see [Escalation](#escalation)).
 
 Rules for good steps:
 
+- A step says what and why, never how. Give the goal, constraints,
+  acceptance criteria, allowed files and what not to do. Do not write
+  code, test cases, file contents or diffs into a step; name the
+  function, file or behavior instead. If the user dictates exact
+  content, pass it through unchanged.
+- Work you would otherwise do yourself (reproducing a bug, checking that
+  new tests catch the old bug, exploring unfamiliar code) is an executor
+  step or an acceptance criterion.
 - One goal per step. Small enough to verify from the transcript.
 - Resolve open decisions with the user before sending the step. If a
   step must carry one, it says: "Post BLOCKED before any edit. No
   commit until answered." Never mix "do not decide X" with "implement
   and commit".
 - Require pasted command output, not restated figures.
+- Check that each acceptance command can produce the expected output.
 - Gated actions (uploads, amending an uploaded commit, device or env
   changes) need the user's approval first. Then put "(user-approved)" in
   the step title and a line `User approved: <exact action>`. Give each
@@ -131,7 +149,9 @@ Run it when the user asks for review, or after the implementation steps.
    the change's intent. Later rounds say only what changed (`see #NN`).
    The reviewer keeps its own context; do not restate its comments.
 2. Judge each comment yourself: *accept* (becomes an executor step) or
-   *reject* (post the reason to `@reviewer` and let it answer once).
+   *reject* (post the reason to `@reviewer` and let it answer once). If
+   judging needs a repro or experiment, send it to the executor as a
+   no-edit step and judge from its report.
 3. Fix accepted comments through the [step loop](#step-loop-executor).
 4. Next round: `@reviewer Round K+1: which comments are resolved, which
    open, any new ones? Fixes in #NN.`
@@ -142,6 +162,11 @@ Refer to posts by `#seq`. Never copy one worker's post into a message to
 the other.
 
 ## Verification
+
+Verify by reading: the report, the transcript through the filters below,
+and the step's commit (`git show --stat`, `git diff`). Do not re-run
+builds, tests or repros yourself. If the transcript lacks proof, send a
+fix step that asks for it.
 
 ```bash
 # Last activity: index, time, type, status.
@@ -170,10 +195,12 @@ Checklist:
 
 - Tool calls did what the report claims.
 - Passing commands show success in their `GENERIC` results.
-- Only allowed files were edited.
+- Only allowed files were edited. File writes through shell commands in
+  tool calls are a rule violation.
 - No destructive or out-of-scope commands.
 - `thinking` shows the step was understood.
-- Reviewer: its transcript shows it read `mnaganov-code-review/SKILL.md`.
+- Reviewer: its transcript shows it read `mnaganov-code-review/SKILL.md`,
+  and no edits.
 
 ## Stall check
 
@@ -213,7 +240,9 @@ Stop and ask the user when:
 
 - Trusting a report without reading the transcript.
 - Multi-goal mega-steps.
-- Doing the executor's work, or the reviewer's, yourself.
+- Doing the executor's work, or the reviewer's, yourself: writing code,
+  tests or fixes into steps, reproducing bugs, re-running tests,
+  mutation checks.
 - Posting a new step while the executor is `working`. Check `status`.
 - Treating skill or file reads as progress. Progress is an edit, a command,
   or a running build/test.
