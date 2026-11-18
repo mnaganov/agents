@@ -233,8 +233,10 @@ Stop and ask the user when:
 - **Restore**: on resume, workers are `stopped`; the next post naming
   them revives them with context intact. Post `@monitor resume` if there is
   a monitor. Re-check each worker's transcript tail before the next step.
-- **Dismiss**: when done, post `[done] <summary>` (no `@`), report to the
-  user, and `kill` all workers only after the user confirms.
+- **Done**: post `[done] <summary>` (no `@`) and report to the user.
+  Keep workers alive for persistent context. Never ask about
+  dismissing them.
+- **Dismiss**: `kill` workers only when the user explicitly asks.
 
 ## Anti-patterns
 
@@ -247,3 +249,4 @@ Stop and ask the user when:
 - Treating skill or file reads as progress. Progress is an edit, a command,
   or a running build/test.
 - Letting the workers talk to each other. All traffic goes through you.
+- Asking the user whether to dismiss or kill workers.
