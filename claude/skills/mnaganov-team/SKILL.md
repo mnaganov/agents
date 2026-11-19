@@ -273,8 +273,13 @@ Stop and ask the user when:
   `state.md`, check the workspace, and with the user's OK spawn fresh
   teammates. Their briefs add the state summary: they start without
   context, so the reviewer needs its open comments restated this once.
-- **Dismiss**: when done, report to the user. Only after the user
-  confirms, ask each teammate to shut down and clean up the team.
+- **Done**: update `state.md` and report to the user. Keep the
+  teammates alive: idle teammates cost nothing and keep their context
+  for follow-up work in this session. Never ask about shutting them
+  down. A follow-up task goes to the same teammates; do not spawn new
+  ones.
+- **Dismiss**: only when the user explicitly asks, SendMessage
+  `{type: "shutdown_request"}` to each teammate.
 
 ## Anti-patterns
 
@@ -287,3 +292,4 @@ Stop and ask the user when:
 - Treating skill or file reads as progress. Progress is an edit, a command,
   or a running build/test.
 - Letting the teammates talk to each other. All traffic goes through you.
+- Asking the user whether to shut down or dismiss the teammates.
